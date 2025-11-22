@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "221496298448",
+    "project_id": "takehomeassignment-e3fbc",
+    "storage_bucket": "takehomeassignment-e3fbc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:221496298448:android:9c7c6bfcb3dfc7fa7707d5",
+        "android_client_info": {
+          "package_name": "com.takehomeassignment"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAi_sRRLKRefXJNnnEGVUvKf6OmQX-uf0s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
