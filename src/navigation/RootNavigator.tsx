@@ -12,6 +12,7 @@ const RootNavigator: React.FC = () => {
   React.useEffect(() => {
     const unsubscribe = auth().onAuthStateChanged(currentUser => {
       setUser(currentUser);
+      console.log('user',user)
       if (initializing) setInitializing(false);
     });
 
