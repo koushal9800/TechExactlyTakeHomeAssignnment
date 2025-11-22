@@ -11,7 +11,11 @@ import auth from '@react-native-firebase/auth';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
+
 import { AuthStackParamList } from '../types/navigation';
+
+import { useSelector } from 'react-redux';
+import { RootState } from '../redux/store';
 import CommonInput from '../components/CommonInput';
 import PrimaryButton from '../components/PrimaryButton';
 
@@ -36,6 +40,9 @@ const SignupSchema = Yup.object().shape({
 });
 
 const SignupScreen: React.FC<Props> = ({ navigation }) => {
+  const mode = useSelector((state: RootState) => state.theme.mode);
+  const isDark = mode === 'dark';
+
   const initialValues: SignupFormValues = {
     email: '',
     password: '',
@@ -51,7 +58,7 @@ const SignupScreen: React.FC<Props> = ({ navigation }) => {
         values.email.trim(),
         values.password,
       );
-     
+      // RootNavigator will switch to Home
     } catch (error: any) {
       console.log(error);
       let message = 'Something went wrong';
@@ -72,13 +79,30 @@ const SignupScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <KeyboardAvoidingView
-      style={styles.root}
+      style={[styles.root, { backgroundColor: isDark ? '#020617' : '#f3f4f6' }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.container}>
-        <View style={styles.card}>
-          <Text style={styles.heading}>Create account ✨</Text>
-          <Text style={styles.subHeading}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: isDark ? '#0b1120' : '#ffffff',
+              borderColor: isDark ? '#1f2937' : '#e5e7eb',
+            },
+          ]}
+        >
+          <Text
+            style={[styles.heading, { color: isDark ? '#e5e7eb' : '#111827' }]}
+          >
+            Create account ✨
+          </Text>
+          <Text
+            style={[
+              styles.subHeading,
+              { color: isDark ? '#9ca3af' : '#6b7280' },
+            ]}
+          >
             Join us to get started with your journey
           </Text>
 
@@ -150,9 +174,23 @@ const SignupScreen: React.FC<Props> = ({ navigation }) => {
           </Formik>
 
           <View style={styles.footerRow}>
-            <Text style={styles.footerText}>Already have an account?</Text>
+            <Text
+              style={[
+                styles.footerText,
+                { color: isDark ? '#9ca3af' : '#6b7280' },
+              ]}
+            >
+              Already have an account?
+            </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <Text style={styles.footerLink}>Log in</Text>
+              <Text
+                style={[
+                  styles.footerLink,
+                  { color: isDark ? '#6366f1' : '#4f46e5' },
+                ]}
+              >
+                Log in
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -166,7 +204,6 @@ export default SignupScreen;
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#020617',
   },
   container: {
     flex: 1,
@@ -174,21 +211,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   card: {
-    backgroundColor: '#0b1120',
     borderRadius: 20,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#1f2937',
   },
   heading: {
     fontSize: 26,
     fontWeight: '700',
-    color: '#e5e7eb',
     marginBottom: 6,
   },
   subHeading: {
     fontSize: 14,
-    color: '#9ca3af',
     marginBottom: 24,
   },
   footerRow: {
@@ -197,12 +230,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   footerText: {
-    color: '#9ca3af',
     fontSize: 14,
   },
   footerLink: {
     marginLeft: 4,
-    color: '#6366f1',
     fontWeight: '600',
     fontSize: 14,
   },

@@ -1,97 +1,246 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+React Native Task Manager with Firebase Auth & Firestore
 
-# Getting Started
+This app is a React Native CLI project that provides:
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+Email/password authentication with Firebase Auth
 
-## Step 1: Start Metro
+A task manager with:
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+Add / edit / delete tasks
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+Mark complete / incomplete
 
-```sh
-# Using npm
-npm start
+Local storage via AsyncStorage
 
-# OR using Yarn
-yarn start
-```
+Sync to Firestore when online
 
-## Step 2: Build and run your app
+Local push notifications for task reminders
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+Light/Dark theme using Redux Toolkit with a global toggle
 
-### Android
+Architecture choice
 
-```sh
-# Using npm
-npm run android
+The app follows a simple, pragmatic architecture suitable for small–medium React Native projects:
 
-# OR using Yarn
-yarn android
-```
+React Native CLI (not Expo)
 
-### iOS
+Full control over native modules (Firebase, Notifee, etc.)
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+Feature-oriented folders
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+src/screens for screen components (auth, home, etc.)
 
-```sh
-bundle install
-```
+src/components for reusable UI (inputs, buttons, task item, theme toggle)
 
-Then, and every time you update your native dependencies, run:
+src/navigation for AuthStack, AppStack, and RootNavigator
 
-```sh
-bundle exec pod install
-```
+src/redux for store + theme slice
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+src/types for shared TypeScript types (e.g. Task, navigation types)
 
-```sh
-# Using npm
-npm run ios
+src/storage for AsyncStorage helpers
 
-# OR using Yarn
-yarn ios
-```
+src/services for Firestore & notification logic
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+State management
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+Authentication state is managed by Firebase Auth (onAuthStateChanged)
 
-## Step 3: Modify your app
+UI theme is managed with Redux Toolkit (themeSlice)
 
-Now that you have successfully run the app, let's make changes!
+Screen-local state (e.g. current form, tasks list in-memory) is managed with React hooks (useState, useEffect)
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+Offline-first task data
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+Tasks are stored locally in AsyncStorage
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+On network availability + login, tasks are synced to Firestore
 
-## Congratulations! :tada:
+Firestore SDK handles offline queuing of writes
 
-You've successfully run and modified your React Native App. :partying_face:
+Form handling & validation
 
-### Now what?
+Login and Signup use Formik + Yup for structured forms and validation
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+Navigation
 
-# Troubleshooting
+React Navigation with:
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+AuthStack for Login / Signup
 
-# Learn More
+AppStack for Home
 
-To learn more about React Native, take a look at the following resources:
+RootNavigator decides which stack based on auth state
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+This keeps the app readable, easy to extend, and avoids over-complicated patterns.
+
+■ Libraries used
+
+Core:
+
+React Native CLI
+
+TypeScript (if you’ve set .tsx everywhere)
+
+Navigation:
+
+@react-navigation/native
+
+@react-navigation/native-stack
+
+react-native-screens
+
+react-native-safe-area-context
+
+Firebase:
+
+@react-native-firebase/app
+
+@react-native-firebase/auth
+
+@react-native-firebase/firestore
+
+State management:
+
+@reduxjs/toolkit
+
+react-redux
+
+Forms & validation:
+
+formik
+
+yup
+
+Storage & network:
+
+@react-native-async-storage/async-storage
+
+@react-native-community/netinfo
+
+Notifications:
+
+@notifee/react-native (local scheduled push notifications)
+
+UI components (custom):
+
+CommonInput – themable text input
+
+PrimaryButton – themable button
+
+TaskItem – rendered task row
+
+ThemeToggleButton – toggles light/dark theme
+
+■ How to run the app in each environment
+1. Prerequisites
+
+Make sure you have:
+
+Node.js & npm / yarn
+
+Java JDK + Android Studio (for Android)
+
+Xcode + CocoaPods (for iOS, on macOS)
+
+React Native CLI environment set up (react-native docs)
+
+Install dependencies in project root:
+
+yarn
+# or
+npm install
+
+2. Firebase setup
+
+Create a Firebase project.
+
+Enable Email/Password Auth in Authentication → Sign-in method.
+
+Enable Cloud Firestore (production mode recommended).
+
+Add Android app:
+
+Use the package name from android/app/src/main/AndroidManifest.xml
+
+Download google-services.json
+
+Place it at: android/app/google-services.json
+
+(If using iOS) Add iOS app and download GoogleService-Info.plist:
+
+Add it via Xcode into the iOS project.
+
+Update Firestore rules (basic secure example):
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId}/tasks/{taskId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
+
+3. Notifee setup (notifications)
+
+Install the library & pods (already part of the project setup):
+
+yarn add @notifee/react-native
+cd ios && pod install && cd ..
+
+
+Android: add permission in android/app/src/main/AndroidManifest.xml:
+
+<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+4. Run on Android (Debug)
+
+From project root:
+
+# Make sure Metro is running
+npx react-native start
+
+# In another terminal
+npx react-native run-android
+
+5. Run on iOS (Debug, macOS only)
+cd ios
+pod install
+cd ..
+
+# Then
+npx react-native run-ios
+
+
+Make sure an iOS Simulator is open or a device is connected.
+
+■ Known limitations
+
+Simple Firestore sync strategy
+
+Currently uses “local wins” or simple overwrite logic when syncing.
+
+No advanced conflict resolution between multiple devices.
+
+No granular per-task sync status
+
+App doesn’t show which tasks are “pending sync” vs “synced”.
+
+Firestore offline queue is handled internally by the SDK.
+
+Reminder time is basic
+
+Reminder time is currently hard-coded or basic (e.g. fixed offset).
+
+No dedicated date-time picker UI for selecting custom reminder time per task (unless you add it).
+
+No deep linking / push from backend
+
+App uses only local notifications (Notifee), not FCM push from server.
+
+No role-based access / profiles
+
+Only supports basic email/password login.
+
+No additional user profile fields beyond Firebase Auth + Firestore task data.
