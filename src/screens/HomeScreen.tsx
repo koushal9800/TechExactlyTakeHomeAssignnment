@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,10 +8,19 @@ import {
   Platform,
 } from 'react-native';
 import auth from '@react-native-firebase/auth';
+import NetInfo from '@react-native-community/netinfo';
 import CommonInput from '../components/CommonInput';
 import PrimaryButton from '../components/PrimaryButton';
 import TaskItem from '../components/TaskItem';
-import {Task} from '../types/task'
+import { Task } from '../types/task';
+import {
+  loadTasksFromStorage,
+  saveTasksToStorage,
+} from '../storage/taskStorage';
+import {
+  fetchTasksFromFirestore,
+  pushTasksToFirestore,
+} from '../services/taskRemote';
 
 const HomeScreen: React.FC = () => {
   const user = auth().currentUser;
@@ -21,6 +30,64 @@ const HomeScreen: React.FC = () => {
   const [description, setDescription] = useState('');
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const [isOnline, setIsOnline] = useState<boolean | null>(null);
+  const [initialLocalLoaded, setInitialLocalLoaded] = useState(false);
+  const [hasInitialRemoteSync, setHasInitialRemoteSync] = useState(false);
+
+  // 🔌 NetInfo: track connectivity
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      const online = !!state.isConnected && state.isInternetReachable !== false;
+      setIsOnline(online);
+    });
+
+    return unsubscribe;
+  }, []);
+
+  // 📥 Load tasks from AsyncStorage on mount
+  useEffect(() => {
+    const loadLocalTasks = async () => {
+      const local = await loadTasksFromStorage(user?.uid);
+      setTasks(local);
+      setInitialLocalLoaded(true);
+    };
+    loadLocalTasks();
+  }, [user?.uid]);
+
+  // 🔄 Initial sync: when online + logged in
+  useEffect(() => {
+    const syncInitial = async () => {
+      if (
+        !user?.uid ||
+        !isOnline ||
+        !initialLocalLoaded ||
+        hasInitialRemoteSync
+      )
+        return;
+
+      try {
+        const remoteTasks = await fetchTasksFromFirestore(user.uid);
+
+        if (remoteTasks.length > 0) {
+          // Remote already has tasks → trust remote
+          setTasks(remoteTasks);
+          await saveTasksToStorage(user.uid, remoteTasks);
+        } else if (tasks.length > 0) {
+          // Remote empty, local has tasks → push local
+          await pushTasksToFirestore(user.uid, tasks);
+        }
+      } catch (error) {
+        console.warn('Initial sync error', error);
+      } finally {
+        setHasInitialRemoteSync(true);
+      }
+    };
+
+    syncInitial();
+    // we intentionally include "tasks" so if you had local tasks & go online,
+    // they get pushed on first sync
+  }, [user?.uid, isOnline, initialLocalLoaded, hasInitialRemoteSync, tasks]);
 
   const handleLogout = () => {
     auth().signOut();
@@ -32,40 +99,64 @@ const HomeScreen: React.FC = () => {
     setEditingTaskId(null);
   };
 
+  // 🧠 Helper to update tasks state + local storage (+ remote if online)
+  const updateTasks = async (updater: (prev: Task[]) => Task[]) => {
+    setTasks(prev => {
+      const updated = updater(prev);
+      // Save to AsyncStorage (fire & forget)
+      saveTasksToStorage(user?.uid, updated).catch(err =>
+        console.warn('Error saving tasks', err),
+      );
+      // Push to Firestore if online & logged in
+      if (user?.uid && isOnline) {
+        pushTasksToFirestore(user.uid, updated).catch(err =>
+          console.warn('Error pushing tasks to Firestore', err),
+        );
+      }
+      return updated;
+    });
+  };
+
   const handleSubmitTask = () => {
     if (!title.trim()) {
-     
       console.warn('Title is required');
       return;
     }
 
     setSubmitting(true);
+    const now = Date.now();
 
     setTimeout(() => {
-      if (editingTaskId) {
-        
-        setTasks(prev =>
-          prev.map(task =>
+      updateTasks(prev => {
+        if (editingTaskId) {
+          // Update existing
+          return prev.map(task =>
             task.id === editingTaskId
-              ? { ...task, title: title.trim(), description: description.trim() }
+              ? {
+                  ...task,
+                  title: title.trim(),
+                  description: description.trim() || undefined,
+                  updatedAt: now,
+                }
               : task,
-          ),
-        );
-      } else {
-        
-        const newTask: Task = {
-          id: Date.now().toString(),
-          title: title.trim(),
-          description: description.trim() || undefined,
-          completed: false,
-          createdAt: Date.now(),
-        };
-        setTasks(prev => [newTask, ...prev]);
-      }
+          );
+        } else {
+          // Add new
+          const newTask: Task = {
+            id: now.toString(),
+            title: title.trim(),
+            description: description.trim() || undefined,
+            completed: false,
+            createdAt: now,
+            updatedAt: now,
+          };
+          return [newTask, ...prev];
+        }
+      });
 
       resetForm();
       setSubmitting(false);
-    }, 150); 
+    }, 120);
   };
 
   const handleEditTask = (task: Task) => {
@@ -75,16 +166,19 @@ const HomeScreen: React.FC = () => {
   };
 
   const handleDeleteTask = (id: string) => {
-    setTasks(prev => prev.filter(task => task.id !== id));
+    updateTasks(prev => prev.filter(task => task.id !== id));
     if (editingTaskId === id) {
       resetForm();
     }
   };
 
   const handleToggleComplete = (id: string) => {
-    setTasks(prev =>
+    const now = Date.now();
+    updateTasks(prev =>
       prev.map(task =>
-        task.id === id ? { ...task, completed: !task.completed } : task,
+        task.id === id
+          ? { ...task, completed: !task.completed, updatedAt: now }
+          : task,
       ),
     );
   };
@@ -109,6 +203,11 @@ const HomeScreen: React.FC = () => {
           <View>
             <Text style={styles.helloText}>Hey,</Text>
             <Text style={styles.userText}>{user?.email ?? 'Guest'}</Text>
+            {isOnline === false && (
+              <Text style={styles.offlineText}>
+                Offline mode • changes saved locally
+              </Text>
+            )}
           </View>
           <PrimaryButton
             title="Logout"
@@ -222,6 +321,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     marginTop: 2,
+  },
+  offlineText: {
+    marginTop: 4,
+    color: '#f97373',
+    fontSize: 12,
   },
   logoutButton: {
     width: 90,
