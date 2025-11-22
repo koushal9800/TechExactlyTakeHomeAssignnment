@@ -6,6 +6,8 @@ import {
   ActivityIndicator,
   ViewStyle,
 } from 'react-native';
+import { useSelector } from 'react-redux';
+import { RootState } from '../redux/store';
 
 interface PrimaryButtonProps {
   title: string;
@@ -22,12 +24,19 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   disabled = false,
   style,
 }) => {
+  const mode = useSelector((state: RootState) => state.theme.mode);
+  const isDark = mode === 'dark';
+
   const isDisabled = disabled || loading;
+
+  const bg = isDark ? '#6366f1' : '#4f46e5';
+  const textColor = '#f9fafb';
 
   return (
     <TouchableOpacity
       style={[
         styles.button,
+        { backgroundColor: bg },
         isDisabled && styles.disabledButton,
         style,
       ]}
@@ -36,9 +45,9 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({
       activeOpacity={0.85}
     >
       {loading ? (
-        <ActivityIndicator />
+        <ActivityIndicator color={textColor} />
       ) : (
-        <Text style={styles.title}>{title}</Text>
+        <Text style={[styles.title, { color: textColor }]}>{title}</Text>
       )}
     </TouchableOpacity>
   );
@@ -52,7 +61,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#4f46e5',
     elevation: 3,
     shadowColor: '#000',
     shadowOpacity: 0.25,
@@ -63,7 +71,6 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   title: {
-    color: '#f9fafb',
     fontWeight: '600',
     fontSize: 16,
   },

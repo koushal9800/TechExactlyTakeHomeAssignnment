@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   TextInput,
@@ -7,6 +8,8 @@ import {
   Text,
   ViewStyle,
 } from 'react-native';
+import { useSelector } from 'react-redux';
+import { RootState } from '../redux/store';
 
 interface CommonInputProps extends TextInputProps {
   label?: string;
@@ -21,15 +24,33 @@ const CommonInput: React.FC<CommonInputProps> = ({
   containerStyle,
   ...rest
 }) => {
+  const mode = useSelector((state: RootState) => state.theme.mode);
+  const isDark = mode === 'dark';
+
+  const inputBg = isDark ? '#020617' : '#ffffff';
+  const border = isDark ? '#1f2937' : '#d1d5db';
+  const textColor = isDark ? '#f9fafb' : '#111827';
+  const labelColor = isDark ? '#9ca3af' : '#6b7280';
+  const placeholderColor = isDark ? '#6b7280' : '#9ca3af';
+  const errorColor = '#f97373';
+
   return (
     <View style={[styles.container, containerStyle]}>
-      {!!label && <Text style={styles.label}>{label}</Text>}
+      {!!label && <Text style={[styles.label, { color: labelColor }]}>{label}</Text>}
       <TextInput
-        style={[styles.input, style]}
-        placeholderTextColor="#6b7280"
+        style={[
+          styles.input,
+          {
+            backgroundColor: inputBg,
+            borderColor: border,
+            color: textColor,
+          },
+          style,
+        ]}
+        placeholderTextColor={placeholderColor}
         {...rest}
       />
-      {!!error && <Text style={styles.error}>{error}</Text>}
+      {!!error && <Text style={[styles.error, { color: errorColor }]}>{error}</Text>}
     </View>
   );
 };
@@ -44,20 +65,15 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     fontSize: 14,
     fontWeight: '500',
-    color: '#9ca3af',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#1f2937',
     borderRadius: 12,
     paddingHorizontal: 14,
     height: 50,
-    backgroundColor: '#020617',
-    color: '#f9fafb',
   },
   error: {
     marginTop: 4,
-    color: '#f97373',
     fontSize: 12,
   },
 });

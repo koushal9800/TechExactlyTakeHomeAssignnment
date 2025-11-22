@@ -23,10 +23,15 @@ import {
   deleteTaskInFirestore
 } from '../services/taskRemote';
 import { requestNotificationPermission, setupNotificationChannel,scheduleTaskReminder,cancelTaskReminder,  } from '../services/notificationService';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState, AppDispatch } from '../redux/store';
+import ThemeToggleButton from '../components/ThemeToggleButton';
 
 
 const HomeScreen: React.FC = () => {
   const user = auth().currentUser;
+  const mode = useSelector((state: RootState) => state.theme.mode);
+  const isDark = mode === 'dark';
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [title, setTitle] = useState('');
@@ -141,7 +146,7 @@ const HomeScreen: React.FC = () => {
     const now = Date.now();
   
    
-    const defaultReminderAt = now +  60 * 1000;
+    const defaultReminderAt = now +  5 * 60 * 1000;
   
     setTimeout(() => {
       updateTasks(prev => {
@@ -259,21 +264,31 @@ const HomeScreen: React.FC = () => {
 
   return (
     <KeyboardAvoidingView
-      style={styles.root}
+    style={[
+      styles.root,
+      { backgroundColor: isDark ? '#020617' : '#f3f4f6' },
+    ]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.helloText}>Hey,</Text>
-            <Text style={styles.userText}>{user?.email ?? 'Guest'}</Text>
+            <Text style={[
+              styles.helloText,
+              { color: isDark ? '#9ca3af' : '#6b7280' },
+            ]}>Hey,</Text>
+            <Text style={[
+              styles.userText,
+              { color: isDark ? '#e5e7eb' : '#111827' },
+            ]}>{user?.email ?? 'Guest'}</Text>
             {isOnline === false && (
               <Text style={styles.offlineText}>
                 Offline mode • changes saved locally
               </Text>
             )}
           </View>
+          <ThemeToggleButton />
           <PrimaryButton
             title="Logout"
             onPress={handleLogout}
@@ -282,16 +297,37 @@ const HomeScreen: React.FC = () => {
         </View>
 
         {/* Summary */}
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryTitle}>Your tasks</Text>
-          <Text style={styles.summaryText}>
+        <View style={[
+          styles.summaryCard,
+          {
+            backgroundColor: isDark ? '#0b1120' : '#ffffff',
+            borderColor: isDark ? '#1f2937' : '#e5e7eb',
+          },
+        ]}>
+          <Text style={[
+            styles.summaryTitle,
+            { color: isDark ? '#e5e7eb' : '#111827' },
+          ]}>Your tasks</Text>
+          <Text style={[
+            styles.summaryText,
+            { color: isDark ? '#9ca3af' : '#6b7280' },
+          ]}>
             {completedCount} completed • {tasks.length - completedCount} pending
           </Text>
         </View>
 
         {/* Task Form */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>
+        <View style={[
+          styles.card,
+          {
+            backgroundColor: isDark ? '#0b1120' : '#ffffff',
+            borderColor: isDark ? '#1f2937' : '#e5e7eb',
+          },
+        ]}>
+          <Text style={[
+            styles.cardTitle,
+            { color: isDark ? '#e5e7eb' : '#111827' },
+          ]}>
             {editingTaskId ? 'Edit task' : 'Add new task'}
           </Text>
           <CommonInput
@@ -332,8 +368,14 @@ const HomeScreen: React.FC = () => {
         <View style={styles.listContainer}>
           {tasks.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyTitle}>No tasks yet</Text>
-              <Text style={styles.emptyText}>
+              <Text style={[
+                styles.emptyTitle,
+                { color: isDark ? '#9ca3af' : '#4b5563' },
+              ]}>No tasks yet</Text>
+              <Text  style={[
+                styles.emptyText,
+                { color: isDark ? '#6b7280' : '#9ca3af' },
+              ]}>
                 Start by adding your first task above.
               </Text>
             </View>
@@ -364,7 +406,7 @@ export default HomeScreen;
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#020617', 
+
   },
   container: {
     flex: 1,
@@ -378,11 +420,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   helloText: {
-    color: '#9ca3af',
+   
     fontSize: 14,
   },
   userText: {
-    color: '#e5e7eb',
+
     fontSize: 18,
     fontWeight: '700',
     marginTop: 2,
@@ -397,33 +439,31 @@ const styles = StyleSheet.create({
     height: 40,
   },
   summaryCard: {
-    backgroundColor: '#0b1120',
+    
     borderRadius: 16,
     padding: 12,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: '#1f2937',
+   
   },
   summaryTitle: {
-    color: '#e5e7eb',
+  
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 4,
   },
   summaryText: {
-    color: '#9ca3af',
+ 
     fontSize: 13,
   },
   card: {
-    backgroundColor: '#0b1120',
+  
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#1f2937',
     marginBottom: 16,
   },
   cardTitle: {
-    color: '#e5e7eb',
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 10,
@@ -445,7 +485,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyTitle: {
-    color: '#9ca3af',
     fontSize: 15,
     fontWeight: '600',
     marginBottom: 4,

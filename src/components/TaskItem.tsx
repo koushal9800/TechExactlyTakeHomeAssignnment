@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Task } from '../types/task';
+import { useSelector } from 'react-redux';
+import { RootState } from '../redux/store';
 
 interface TaskItemProps {
   task: Task;
@@ -15,10 +17,21 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onEdit,
   onDelete,
 }) => {
+  const mode = useSelector((state: RootState) => state.theme.mode);
+  const isDark = mode === 'dark';
+
   const isCompleted = task.completed;
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: isDark ? '#020617' : '#ffffff',
+          borderColor: isDark ? '#1f2937' : '#e5e7eb',
+        },
+      ]}
+    >
       <TouchableOpacity
         style={styles.left}
         activeOpacity={0.8}
@@ -32,15 +45,25 @@ const TaskItem: React.FC<TaskItemProps> = ({
         />
         <View style={styles.textContainer}>
           <Text
-            style={[styles.title, isCompleted && styles.titleCompleted]}
+            style={[
+              styles.title,
+              {
+                color: isDark ? '#e5e7eb' : '#111827',
+              },
+              isCompleted && styles.titleCompleted,
+            ]}
             numberOfLines={1}
           >
             {task.title}
           </Text>
+
           {!!task.description && (
             <Text
               style={[
                 styles.description,
+                {
+                  color: isDark ? '#9ca3af' : '#6b7280',
+                },
                 isCompleted && styles.descriptionCompleted,
               ]}
               numberOfLines={2}
@@ -81,9 +104,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: 12,
     borderRadius: 14,
-    backgroundColor: '#020617',
     borderWidth: 1,
-    borderColor: '#1f2937',
     marginBottom: 10,
     alignItems: 'center',
   },
@@ -104,9 +125,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#22c55e',
     borderColor: '#22c55e',
   },
-  textContainer: { flex: 1 },
+  textContainer: {
+    flex: 1,
+  },
   title: {
-    color: '#e5e7eb',
     fontSize: 15,
     fontWeight: '600',
   },
@@ -115,7 +137,6 @@ const styles = StyleSheet.create({
     color: '#6b7280',
   },
   description: {
-    color: '#9ca3af',
     fontSize: 13,
     marginTop: 2,
   },
