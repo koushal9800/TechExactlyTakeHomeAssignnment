@@ -15,6 +15,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onEdit,
   onDelete,
 }) => {
+  const isCompleted = task.completed;
+
   return (
     <View style={styles.container}>
       <TouchableOpacity
@@ -25,15 +27,12 @@ const TaskItem: React.FC<TaskItemProps> = ({
         <View
           style={[
             styles.statusDot,
-            task.completed && styles.statusDotCompleted,
+            isCompleted && styles.statusDotCompleted,
           ]}
         />
         <View style={styles.textContainer}>
           <Text
-            style={[
-              styles.title,
-              task.completed && styles.titleCompleted,
-            ]}
+            style={[styles.title, isCompleted && styles.titleCompleted]}
             numberOfLines={1}
           >
             {task.title}
@@ -42,7 +41,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             <Text
               style={[
                 styles.description,
-                task.completed && styles.descriptionCompleted,
+                isCompleted && styles.descriptionCompleted,
               ]}
               numberOfLines={2}
             >
@@ -53,9 +52,20 @@ const TaskItem: React.FC<TaskItemProps> = ({
       </TouchableOpacity>
 
       <View style={styles.actions}>
-        <TouchableOpacity onPress={() => onEdit(task)}>
-          <Text style={styles.actionText}>Edit</Text>
+        <TouchableOpacity
+          disabled={isCompleted}
+          onPress={() => onEdit(task)}
+        >
+          <Text
+            style={[
+              styles.actionText,
+              isCompleted && styles.actionTextDisabled,
+            ]}
+          >
+            Edit
+          </Text>
         </TouchableOpacity>
+
         <TouchableOpacity onPress={() => onDelete(task.id)}>
           <Text style={[styles.actionText, styles.deleteText]}>Delete</Text>
         </TouchableOpacity>
@@ -94,9 +104,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#22c55e',
     borderColor: '#22c55e',
   },
-  textContainer: {
-    flex: 1,
-  },
+  textContainer: { flex: 1 },
   title: {
     color: '#e5e7eb',
     fontSize: 15,
@@ -123,6 +131,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginBottom: 4,
     fontWeight: '500',
+  },
+  actionTextDisabled: {
+    color: '#4b5563',
   },
   deleteText: {
     color: '#f97373',

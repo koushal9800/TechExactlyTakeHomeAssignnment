@@ -20,7 +20,10 @@ import {
 import {
   fetchTasksFromFirestore,
   pushTasksToFirestore,
+  deleteTaskInFirestore
 } from '../services/taskRemote';
+import { requestNotificationPermission, setupNotificationChannel,scheduleTaskReminder,cancelTaskReminder,  } from '../services/notificationService';
+
 
 const HomeScreen: React.FC = () => {
   const user = auth().currentUser;
@@ -70,11 +73,11 @@ const HomeScreen: React.FC = () => {
         const remoteTasks = await fetchTasksFromFirestore(user.uid);
 
         if (remoteTasks.length > 0) {
-          // Remote already has tasks → trust remote
+          
           setTasks(remoteTasks);
           await saveTasksToStorage(user.uid, remoteTasks);
         } else if (tasks.length > 0) {
-          // Remote empty, local has tasks → push local
+         
           await pushTasksToFirestore(user.uid, tasks);
         }
       } catch (error) {
@@ -85,9 +88,16 @@ const HomeScreen: React.FC = () => {
     };
 
     syncInitial();
-    // we intentionally include "tasks" so if you had local tasks & go online,
-    // they get pushed on first sync
+  
   }, [user?.uid, isOnline, initialLocalLoaded, hasInitialRemoteSync, tasks]);
+
+
+  useEffect(() => {
+    (async () => {
+      await requestNotificationPermission();
+      await setupNotificationChannel();
+    })();
+  }, []);
 
   const handleLogout = () => {
     auth().signOut();
@@ -99,49 +109,68 @@ const HomeScreen: React.FC = () => {
     setEditingTaskId(null);
   };
 
-  // 🧠 Helper to update tasks state + local storage (+ remote if online)
+  
   const updateTasks = async (updater: (prev: Task[]) => Task[]) => {
     setTasks(prev => {
       const updated = updater(prev);
-      // Save to AsyncStorage (fire & forget)
+  
+      
       saveTasksToStorage(user?.uid, updated).catch(err =>
         console.warn('Error saving tasks', err),
       );
-      // Push to Firestore if online & logged in
-      if (user?.uid && isOnline) {
+  
+      
+      if (user?.uid) {
         pushTasksToFirestore(user.uid, updated).catch(err =>
           console.warn('Error pushing tasks to Firestore', err),
         );
       }
+  
       return updated;
     });
   };
+  
 
   const handleSubmitTask = () => {
     if (!title.trim()) {
       console.warn('Title is required');
       return;
     }
-
+  
     setSubmitting(true);
     const now = Date.now();
-
+  
+   
+    const defaultReminderAt = now +  60 * 1000;
+  
     setTimeout(() => {
       updateTasks(prev => {
         if (editingTaskId) {
-          // Update existing
-          return prev.map(task =>
+          
+          const updated = prev.map(task =>
             task.id === editingTaskId
               ? {
                   ...task,
                   title: title.trim(),
                   description: description.trim() || undefined,
                   updatedAt: now,
+                  
+                  reminderAt: task.reminderAt ?? defaultReminderAt,
                 }
               : task,
           );
+  
+      
+          const updatedTask = updated.find(t => t.id === editingTaskId);
+          if (updatedTask) {
+            
+            cancelTaskReminder(updatedTask.id).catch(() => {});
+            scheduleTaskReminder(updatedTask).catch(() => {});
+          }
+  
+          return updated;
         } else {
-          // Add new
+         
           const newTask: Task = {
             id: now.toString(),
             title: title.trim(),
@@ -149,39 +178,75 @@ const HomeScreen: React.FC = () => {
             completed: false,
             createdAt: now,
             updatedAt: now,
+            reminderAt: defaultReminderAt,
           };
+  
+          
+          scheduleTaskReminder(newTask).catch(() => {});
+  
           return [newTask, ...prev];
         }
       });
-
+  
       resetForm();
       setSubmitting(false);
     }, 120);
   };
+  
 
   const handleEditTask = (task: Task) => {
+    if (task.completed) {
+     
+      console.warn('Completed tasks cannot be edited');
+      return;
+    }
+  
     setEditingTaskId(task.id);
     setTitle(task.title);
     setDescription(task.description || '');
   };
+  
 
   const handleDeleteTask = (id: string) => {
+   
     updateTasks(prev => prev.filter(task => task.id !== id));
+  
+    
     if (editingTaskId === id) {
       resetForm();
     }
+  
+  
+    if (user?.uid) {
+      deleteTaskInFirestore(user.uid, id).catch(err =>
+        console.warn('Error deleting task in Firestore', err),
+      );
+    }
   };
+  
+  
 
   const handleToggleComplete = (id: string) => {
     const now = Date.now();
     updateTasks(prev =>
-      prev.map(task =>
-        task.id === id
-          ? { ...task, completed: !task.completed, updatedAt: now }
-          : task,
-      ),
+      prev.map(task => {
+        if (task.id !== id) return task;
+        const nextCompleted = !task.completed;
+  
+        if (nextCompleted) {
+          
+          cancelTaskReminder(task.id).catch(() => {});
+        }
+  
+        return {
+          ...task,
+          completed: nextCompleted,
+          updatedAt: now,
+        };
+      }),
     );
   };
+  
 
   const handleCancelEdit = () => {
     resetForm();
@@ -299,7 +364,7 @@ export default HomeScreen;
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#020617', // dark background
+    backgroundColor: '#020617', 
   },
   container: {
     flex: 1,

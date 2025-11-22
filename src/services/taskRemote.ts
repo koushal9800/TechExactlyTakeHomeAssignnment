@@ -18,6 +18,7 @@ export const fetchTasksFromFirestore = async (uid: string): Promise<Task[]> => {
       completed: data.completed ?? false,
       createdAt: data.createdAt,
       updatedAt: data.updatedAt ?? data.createdAt,
+      reminderAt: data.reminderAt ?? null,
     } as Task;
   });
 };
@@ -36,3 +37,8 @@ export const pushTasksToFirestore = async (
 
   await batch.commit();
 };
+
+
+export const deleteTaskInFirestore = async (uid: string, taskId: string) => {
+    await tasksCollection(uid).doc(taskId).delete();
+  };
